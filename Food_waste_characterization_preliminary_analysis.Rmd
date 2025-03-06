@@ -1,0 +1,149 @@
+---
+title: "Food Waste Characterization Preliminary Analysis"
+author: "RMJ"
+date: "2025-03-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Food Waste Characterization Preliminary Analysis
+
+
+This script is meant to analyze the characteristics of the food waste data. 
+
+```{r}
+# Load the library
+
+library(tidyverse)
+library(ggplot2)
+library(reshape2)
+library(plotly)
+library(vegan)
+library(Polychrome)
+
+theme_set(theme_bw(base_size = 16))
+
+### bring in the data
+
+df <- read.csv(file = "Dataset/Food_waste_characterization.csv",header = TRUE,sep = ",")
+
+```
+
+as always we should look at the dimensions and check to see if everything loaded properly
+
+```{r}
+
+dim(df)
+
+glimpse(df)
+
+# looks good
+
+# lets get a summary for completeness
+
+summary(df)
+
+
+```
+
+The first thing we want to do is understand the specific masses of each substrate per food waste item. For this we are going to assume that the TS.Perc represents the total mass of digestible substrate and from here we can calculate the mass of each of the components
+
+example:
+
+Mass Carbohydrate = [(Standard Mass (1000g) * TS.Perc) * Carbohydrate.Perc]
+
+```{r}
+
+# first we should convert everything into a percent
+
+df.p <- df %>%  mutate(TS.Perc=TS.Perc/100) %>% mutate(VS.Perc=VS.Perc/100) %>% mutate(Fat.Perc=Fat.Perc/100) %>% mutate(Protein.Perc=Protein.Perc/100) %>% mutate(Carbohydrate.Perc=Carbohydrate.Perc/100)
+
+# and now we can make a standard mass per 1000grams
+
+kg <- 1000
+
+df.p <- df.p %>% mutate(TS.mass=kg*TS.Perc) %>% mutate(Fat.mass=TS.mass*Fat.Perc) %>% mutate(Protein.mass=TS.mass*Protein.Perc) %>% mutate(Carbohydrate.mass=TS.mass*Carbohydrate.Perc)
+
+
+```
+
+And with that we can start making plots to visualize the different food wastes
+
+We will begin with a histogram showing the freq distribution of different percentage quantities of each food
+
+```{r}
+
+hist(df.p$Fat.Perc)
+hist(df.p$Protein.Perc)
+hist(df.p$Carbohydrate.Perc)
+
+```
+We can melt the data so it is easier to use in ggplot as well
+
+```{r}
+
+df.m <- df.p %>% select(G.num,Group,Food.Wastes,Fat.Perc,Protein.Perc,Carbohydrate.Perc) %>% melt(id.vars = c("G.num","Food.Wastes","Group"))
+
+ggplot(data = df.m,aes(x=Group,y=value,fill = variable))+geom_bar(stat='identity',position = 'dodge')
+
+df.mm <- df.p %>% select(G.num,Group,Food.Wastes,Fat.mass,Protein.mass,Carbohydrate.mass) %>% melt(id.vars = c("G.num","Food.Wastes","Group"))
+
+ggplot(data = df.mm,aes(x=Group,y=value,fill = variable))+geom_bar(stat='identity',position = 'dodge')
+
+```
+
+```{r}
+
+
+plot_ly(z=df.p$Carbohydrate.mass, y=df.p$Protein.mass, x=df.p$Fat.mass, type = "scatter3d",mode="markers", color = df.p$Group)
+
+plot_ly(z=df.p$Carbohydrate.Perc, y=df.p$Protein.Perc, x=df.p$Fat.Perc, type = "scatter3d",mode="markers", color = df.p$Group)
+
+
+fig <- plot_ly(df.p, x = ~Carbohydrate.Perc, y = ~Protein.Perc, z = ~Fat.Perc, color = ~Group)
+fig <- fig %>% add_markers()
+fig <- fig %>% layout(scene = list(xaxis = list(title = '% Carbohydrates'),
+                     yaxis = list(title = '% Proteins'),
+                     zaxis = list(title = '% Fat')))
+
+fig
+
+
+
+```
+```{r}
+
+pc <- df %>% select(G.num,Food.Wastes,Group,Fat.Perc,Protein.Perc,Carbohydrate.Perc)
+
+com = pc[,4:ncol(pc)]
+
+m_com = as.matrix(com)
+
+set.seed(666)
+nmds = metaMDS(m_com, distance = "bray")
+nmds
+
+plot(nmds)
+
+data.scores = as.data.frame(scores(nmds)$sites)
+
+data.scores$G.num = pc$G.num
+data.scores$Food.Wastes = pc$Food.Wastes
+data.scores$Group = pc$Group
+
+ggplot(data.scores, aes(x = NMDS1, y = NMDS2)) + 
+  geom_point(size = 3, aes( colour = Group))
+
+unique(data.scores$Group)
+
+P15 = createPalette(15,  c("#ff0000", "#00ff00", "#0000ff"))
+
+ggplot(data.scores, aes(x = NMDS1, y = NMDS2)) + 
+  geom_point(size = 3, aes( colour = Group))+scale_color_manual(values = unname(P15))
+
+
+```
+
