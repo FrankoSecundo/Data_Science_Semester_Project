@@ -160,3 +160,4 @@ ggplot(data = df1.b)+geom_point(aes(x=time,y=q_gas,color = Group),show.legend = 
  write.csv(fwd,"C:/Users/magic/Documents/Data_Science_Semester_Project/Data_Science_Semester_Project/Dataset/Food_Waste_Characterization_perc.csv",row.names = FALSE)
 
 
+unique(fwd$Group)

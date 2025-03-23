@@ -1,6 +1,14 @@
+<<<<<<< HEAD
 <?xml version="1.0" encoding="UTF-8"?>
 <MF0 version="1.1" packageUris="http://schema.mathworks.com/mf0/SlCache/19700101">
   <slcache.FileAttributes type="slcache.FileAttributes" uuid="fd7841fa-0bb5-4bb4-b237-644b0ebf2b69">
     <checksum>OxxM91FeIG7uXxpvcezphRrNw6Ow9hQOibmrZ6Q5w9FfsMCiEzMSL/Md8xWIkND0D7sAy8XXcofMWBqr+xxVPA==</checksum>
   </slcache.FileAttributes>
+=======
+<?xml version="1.0" encoding="UTF-8"?>
+<MF0 version="1.1" packageUris="http://schema.mathworks.com/mf0/SlCache/19700101">
+  <slcache.FileAttributes type="slcache.FileAttributes" uuid="fd7841fa-0bb5-4bb4-b237-644b0ebf2b69">
+    <checksum>OxxM91FeIG7uXxpvcezphRrNw6Ow9hQOibmrZ6Q5w9FfsMCiEzMSL/Md8xWIkND0D7sAy8XXcofMWBqr+xxVPA==</checksum>
+  </slcache.FileAttributes>
+>>>>>>> 491b5c33a6c039be4b62dc9e6cf2b27a74051f93
 </MF0>
