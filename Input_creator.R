@@ -6,10 +6,14 @@ library(dplyr)
 
 theme_set(theme_bw(base_size = 16))
 
+color = grDevices::colors()[grep('gr(a|e)y', grDevices::colors(), invert = T)]
+
+pal.n20 <- sample(color, 20)
+
 
 #load in the default input which will be the base template
 
-inp <- read.csv(file = "Default_input.csv",sep = ",",header = TRUE)
+inp <- read.csv(file = "Default_input_new.csv",sep = ",",header = TRUE)
 
 
 #and bring in the foodwaste dataset
@@ -24,12 +28,13 @@ fwd <- fwd %>% mutate(Fat.Perc=Fat.Perc/100) %>% mutate(Protein.Perc=Protein.Per
 
 # set the input mass in grams
 
-inputmass <- 1000
+inputmass <- 10
 
 for(i in 1:nrow(fwd)){
   
-  TS <- inputmass * fwd[i,7]
-  VS <- TS * fwd[i,8]
+  # TS <- inputmass * fwd[i,7]
+  # VS <- TS * fwd[i,8] this is the old part commented out now we will be operating directly from VS mass
+  VS <- inputmass
   CP <- VS * fwd[i,13]
   PP <- VS * fwd[i,12]
   LP <- VS * fwd[i,11]
@@ -41,7 +46,7 @@ for(i in 1:nrow(fwd)){
   inp.temp$X_li <- LP
   
   fname <- paste(fwd[i,4],".csv",sep = "")
-  setwd("C:/Users/magic/Documents/Data_Science_Semester_Project/Data_Science_Semester_Project/Dataset/Individual_inputs")
+  setwd("C:/Users/magic/Documents/Data_Science_Semester_Project/Data_Science_Semester_Project/Dataset/Individual_inputs_masscor")
   
   write.csv(inp.temp,file = fname,row.names = FALSE)
   
@@ -53,11 +58,11 @@ setwd("C:/Users/magic/Documents/Data_Science_Semester_Project/Data_Science_Semes
 
 #load in the default input for continuous feed which will be the base template
 
-inf <- read.csv(file = "Default_input_continuous.csv",sep = ",",header = TRUE)
+inf <- read.csv(file = "Default_input_continuous_new.csv",sep = ",",header = TRUE)
 
 # set the input mass in grams
 
-VSmass <- 300
+VSmass <- 74
 
 for(i in 1:nrow(fwd)){
   
@@ -73,7 +78,7 @@ for(i in 1:nrow(fwd)){
   inf.temp$X_li <- LP
   
   fname <- paste(fwd[i,4],".csv",sep = "")
-  setwd("C:/Users/magic/Documents/Data_Science_Semester_Project/Data_Science_Semester_Project/Dataset/Individual_inputs_continuous/")
+  setwd("C:/Users/magic/Documents/Data_Science_Semester_Project/Data_Science_Semester_Project/Dataset/Individual_inputs_continuous_masscor/")
   
   write.csv(inf.temp,file = fname,row.names = FALSE)
   
@@ -91,7 +96,7 @@ df2 <- data.frame(time=c('0'),q_gas=c('0'),Food.Wastes.Clean=c('0'))
 
 # go to where the files are
 
-setwd("C:/Users/magic/Documents/Data_Science_Semester_Project/Data_Science_Semester_Project/ADM1/Experimental/Output/Event/")
+setwd("C:/Users/magic/Documents/Data_Science_Semester_Project/Data_Science_Semester_Project/ADM1/Experimental/Output/Event_masscor/")
 
 names <- list.files(path = ".")
 
@@ -118,6 +123,23 @@ df2.b <- left_join(df2,fwd,by="Food.Wastes.Clean")
 
 ggplot(data = df2.b)+geom_point(aes(x=time,y=q_gas,color = Group),show.legend = FALSE)+facet_wrap(Group~.,scales = "free")
 
+##### finding cumulative product
+
+df2.bt <- df2.b  %>% group_by(Food.Wastes.Clean) %>% mutate(diff = time - lag(time, default = first(time))) %>% mutate(gas_prod_L = time*q_gas)
+
+df2.gp <- df2.bt %>% select(Food.Wastes.Clean,Group,gas_prod_L)
+
+df2.gps <- df2.gp %>% group_by(Food.Wastes.Clean,Group) %>% summarise(sum=sum(gas_prod_L),mean=mean(gas_prod_L))
+
+
+ggplot(data = df2.gps)+geom_bar(mapping = aes(x=Food.Wastes.Clean,y=sum,fill = Group),stat = 'identity')+facet_wrap(Group~.,scales = "free_x")
+
+df2.gps <- df2.gps %>% mutate(production_L_g_VS=sum/10000)
+
+#### Box plot
+
+ggplot(data = df2.gps)+geom_boxplot(mapping = aes(x=Group,y=production_L_g_VS,fill = Group),color="black")+scale_fill_manual(values = pal.n20)
+
 
 ############## Continuous ###################
 
@@ -128,7 +150,7 @@ df1 <- data.frame(time=c('0'),q_gas=c('0'),Food.Wastes.Clean=c('0'))
 
 # go to where the files are
 
-setwd("C:/Users/magic/Documents/Data_Science_Semester_Project/Data_Science_Semester_Project/ADM1/Experimental/Output/Continuous/")
+setwd("C:/Users/magic/Documents/Data_Science_Semester_Project/Data_Science_Semester_Project/ADM1/Experimental/Output/Continuous_masscor/")
 
 names <- list.files(path = ".")
 
@@ -158,6 +180,19 @@ df1.b <- left_join(df1,fwd,by="Food.Wastes.Clean")
 ggplot(data = df1.b)+geom_point(aes(x=time,y=q_gas,color = Group),show.legend = FALSE)+facet_wrap(Group~.)
 
  write.csv(fwd,"C:/Users/magic/Documents/Data_Science_Semester_Project/Data_Science_Semester_Project/Dataset/Food_Waste_Characterization_perc.csv",row.names = FALSE)
+ 
+ 
+df1.bt <- df1.b  %>% group_by(Food.Wastes.Clean) %>% mutate(diff = time - lag(time, default = first(time))) %>% mutate(gas_prod_L = time*q_gas)
+
+df1.gp <- df1.bt %>% select(Food.Wastes.Clean,Group,gas_prod_L)
+
+df1.gps <- df1.gp %>% group_by(Food.Wastes.Clean,Group) %>% summarise(sum=sum(gas_prod_L),mean=mean(gas_prod_L))
 
 
-unique(fwd$Group)
+ggplot(data = df1.gps)+geom_bar(mapping = aes(x=Food.Wastes.Clean,y=sum,fill = Group),stat = 'identity')+facet_wrap(Group~.,scales = "free_x")
+
+df1.gps <- df1.gps %>% mutate(production_L_g_VS=sum/37370)
+
+### box plots might be good visual
+
+ggplot(data = df1.gps)+geom_boxplot(mapping = aes(x=Group,y=production_L_g_VS,fill = Group),color="black")+scale_fill_manual(values = pal.n20)
